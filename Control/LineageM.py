@@ -9,7 +9,7 @@ import numpy as np
 
 class LM:
     def __init__(self,Device_Name,Sample_Path):
-       self.ADB = adb.ADB(Device_Name=Device_Name)
+       self.ADB = adb.ADB(Device_Name=Device_Name,Screen_Size=[1280,720])
        #啟動截圖線程
        # self.Game_Screen = self.ADB.ScreenHot
        self.Sample_Image = dict()
@@ -39,29 +39,61 @@ class LM:
 
     def Get_Array_Num_Count(self,NP_Arr,Num):
         rs = np.where(NP_Arr==Num)
-        print(rs)
+        #print(rs)
         k = 0
         for row in rs:
             for n in row:
                  k +=1
 
         return k
-    def Check_Menu_Red_Point(self):
-        loc = [892,17,917,34]
 
-        Menu_img = self.ADB.ScreenHot.crop(loc)
-        Menu_img.save('now_menu.png')
+    def Check_Sign_in_Red_Point(self):
+        loc = [1017,303,1035,328]
+        Mail_Box_Img = self.ADB.ScreenHot.crop(loc)
+        Mail_Box_Img.save('now_Sign_In_Point.png')
 
-        CV2_Image = self.PIL_to_CV2(Menu_img)
+        W_count = self.Get_PIL_Red_Point_Count(Mail_Box_Img)
+        if W_count == 0:
+            return 0
+        else:
+            return 1
+
+
+    def Check_MailBox_Red_Point(self):
+        # loc = [1093,156,1113,183]
+        loc = [1093, 156, 1133, 203]
+        Mail_Box_Img =  self.ADB.ScreenHot.crop(loc)
+       # Mail_Box_Img.save('now_main_box.png')
+
+        W_count = self.Get_PIL_Red_Point_Count(Mail_Box_Img)
+        if W_count == 0:
+            return 0
+        else:
+            return 1
+
+
+
+
+    #取得pil格式圖片的紅色點數量
+    def Get_PIL_Red_Point_Count(self,PIL_Img):
+        CV2_Image = self.PIL_to_CV2(PIL_Img)
         HSV = cv2.cvtColor(CV2_Image, cv2.COLOR_BGR2HSV)
-
 
         # 過濾出指定的顏色
         low_range = np.array([0, 123, 100])
         high_range = np.array([5, 255, 255])
         mask = cv2.inRange(HSV, low_range, high_range)
 
-        W_count = self.Get_Array_Num_Count(mask,255)
+        W_count = self.Get_Array_Num_Count(mask, 255)
+        return W_count
+
+    def Check_Menu_Red_Point(self):
+        loc = [1243,21,1261,40]
+
+        Menu_img = self.ADB.ScreenHot.crop(loc)
+       # Menu_img.save('now_menu.png')
+
+        W_count = self.Get_PIL_Red_Point_Count(Menu_img)
         if W_count == 0:
             return  0
         else:
@@ -89,6 +121,27 @@ class LM:
         else:
             return 1
 
+    def Check_And_Take_Sign_MailBox(self):
+
+        if self.Check_Menu_Red_Point() == 1:
+            self.Click_System_Btn("Menu")
+            time.sleep(1.5)
+            if self.Check_MailBox_Red_Point() == 1:
+                print("有新郵件")
+                self.Click_System_Btn("Menu_Sign_in")
+                time.sleep(0.5)
+                self.Click_System_Btn("Menu_Sign_in")
+                time.sleep(1.5)
+            if self.Check_Sign_in_Red_Point() == 1:
+                print("還沒簽到")
+                self.Click_System_Btn("Menu_Mail_Box")
+                time.sleep(0.5)
+                self.Click_System_Btn("Menu_Mail_Box_All_Taken")
+                time.sleep(0.3)
+                self.Click_System_Btn("Menu")
+                time.sleep(1.5)
+            self.Click_System_Btn("Menu")
+
 
     def Click_System_Btn(self,name):
         Btn_Map = {}
@@ -110,6 +163,11 @@ class LM:
         Btn_Map['Mission'] = [1161, 45]
         Btn_Map['Mission_Close_Menu'] = [1237, 45]
         Btn_Map['Menu'] = [1237, 45]
+        Btn_Map['Menu_Sign_in'] = [1082, 185]
+        Btn_Map['Menu_Mail_Box'] = [1006, 327]
+        Btn_Map['Menu_Mail_Box_All_Taken'] = [1084, 662]
+
+
 
         if name not in Btn_Map:
             print("無此按鍵名稱：{}".format(name))
@@ -122,6 +180,7 @@ class LM:
 
 if __name__ == '__main__':
     obj = LM(Device_Name="127.0.0.1:5555",Sample_Path="../Data/Sample_img")
+
     # while 1:
     #     Has_stat =   obj.Check_Red_Water_Exist()
     #     if Has_stat == 1:
@@ -130,7 +189,15 @@ if __name__ == '__main__':
     #         print("沒藥水")
     #         obj.Click_System_Btn("F8")
     #     time.sleep(1)
-    obj.Check_Menu_Red_Point()
+
+    # obj.Click_System_Btn("Menu_Sign_in")
+    # rs = obj.Check_And_Take_Sign_MailBox()
+
+    # if rs == 1:
+    #     print("有新訊息哦")
+    # else:
+    #     print("沒有新訊息哦")
+
     # obj.Click_System_Btn('Menu')
     # time.sleep(0.2)
 
